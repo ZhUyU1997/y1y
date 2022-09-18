@@ -16,7 +16,7 @@ import isMobile from "ismobilejs"
 
 import "./App.css"
 
-import data from "./level-data/90018.json"
+import data from "./level-data/90019.json"
 import block_bg from "./assets/block_bg.png"
 import bg from "./assets/bg.png"
 import area_center from "./assets/fence/center.png"
@@ -52,8 +52,6 @@ function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
                 paddingRight: 15,
                 paddingTop: 13,
                 paddingBottom: 21,
-                transition:
-                    "filter 0.3s, left 0.4s, top 0.4s, opacity 0.4s, transform 0.4s",
                 ...style,
             }}
             {...props}
@@ -233,6 +231,8 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
                     rowNum={moveOutAreaRow}
                     style={{
                         transform: "scale(0.1)",
+                        transition:
+                            "filter 0.3s, left 0.4s, top 0.4s, opacity 0.4s, transform 0.4s",
                         opacity: 0,
                     }}
                 />
@@ -246,6 +246,9 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
                     rowNum={moveOutAreaRow}
                     style={{
                         zIndex: 1,
+
+                        transition:
+                            "filter 0.3s, left 0.4s, top 0.4s, opacity 0.4s, transform 0.4s",
                     }}
                 />
             )
@@ -260,6 +263,9 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
                     colNum={colNum}
                     rowNum={rowNum}
                     overlap={overlap}
+                    style={{
+                        transition: "filter 0.3s, transform 0.4s",
+                    }}
                 />
             )
     })
