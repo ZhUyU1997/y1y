@@ -346,11 +346,11 @@ function App() {
                 alignItems: "center",
                 flexDirection: "column",
             }}
-            onClick={() => {
-                if (isMobile(window.navigator).any && screenfull.isEnabled) {
-                    screenfull.request()
-                }
-            }}
+            // onClick={() => {
+            //     if (isMobile(window.navigator).any && screenfull.isEnabled) {
+            //         screenfull.request()
+            //     }
+            // }}
         >
             <ChessBoard
                 blocks={blocks}
