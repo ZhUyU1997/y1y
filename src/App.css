@@ -1,0 +1,9 @@
+.block.active:active {
+    transform: scale(1.2);
+    z-index: 1;
+}
+
+.skillbtn:active {
+    transform: scale(0.9);
+    transition: transform 0.1s ease-out;
+}
