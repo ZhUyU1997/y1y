@@ -11,6 +11,9 @@ import {
     shuffleBlock,
 } from "./store/gameSlice"
 
+import screenfull from "screenfull"
+import isMobile from "ismobilejs"
+
 import "./App.css"
 
 import data from "./level-data/90018.json"
@@ -203,8 +206,15 @@ function Skill({ colNum, rowNum, onUseSkill }) {
     )
 }
 
+function getScale(size) {
+    return size.width / size.height < 65 / 115.0
+        ? size.width / (15 * 65)
+        : size.height / (15 * 115)
+}
 function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
     const size = useWindowSize()
+    const scale = getScale(size)
+
     const moveOutAreaCol = 5
     const moveOutAreaRow = 80
 
@@ -253,16 +263,17 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
                 />
             )
     })
-
     return (
         <div
             style={{
                 width: 15 * 65,
                 height: 15 * 115,
+                minWidth: 15 * 65,
+                minHeight: 15 * 115,
                 display: "flex",
                 position: "relative",
                 willChange: "transform",
-                transform: `scale(${size.width / (15 * 65)})`,
+                transform: `scale(${scale})`,
             }}
         >
             <MoveOutArea
@@ -319,18 +330,26 @@ function useGame(data) {
 }
 
 function App() {
+    const size = useWindowSize()
+    const scale = getScale(size)
+
     const { blocks, dispatch, shuffleBlock, cancelMove } = useGame(data)
     return (
         <div
             style={{
                 backgroundImage: `url(${bg})`,
-
-                width: "100vw",
-                height: "100vh",
+                backgroundSize: "min(50vw,400px)",
+                width: "100%",
+                height: "100%",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "column",
+            }}
+            onClick={() => {
+                if (isMobile(window.navigator).any && screenfull.isEnabled) {
+                    screenfull.request()
+                }
             }}
         >
             <ChessBoard

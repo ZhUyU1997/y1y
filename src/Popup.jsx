@@ -4,7 +4,7 @@ function Title({ children }) {
     return (
         <div
             style={{
-                fontSize: 80,
+                fontSize: "10vw",
                 backgroundColor: "black",
                 color: "yellow",
                 borderRadius: 5,
@@ -13,18 +13,20 @@ function Title({ children }) {
                 paddingLeft: 30,
                 paddingRight: 30,
                 border: "5px black solid",
-                width: "50vw",
+                minWidth: "70vw",
                 textAlign: "center",
-                height: "10vh",
+                minHeight: "15vh",
 
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
                 flexDirection: "column",
                 margin: 40,
+                padding: "3vw",
+                overflow: "hidden    ",
             }}
         >
-            <div>{children}</div>
+            {children}
         </div>
     )
 }
@@ -33,7 +35,7 @@ function Button({ children, ...props }) {
     return (
         <div
             style={{
-                fontSize: 50,
+                fontSize: "5.5vw",
                 borderRadius: 10,
                 backgroundColor: "white",
                 color: "black",
@@ -51,7 +53,7 @@ function Button({ children, ...props }) {
             }}
             {...props}
         >
-            <div>{children}</div>
+            {children}
         </div>
     )
 }

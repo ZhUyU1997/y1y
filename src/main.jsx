@@ -1,3 +1,5 @@
+import "core-js/es/array/find-last-index"
+
 import React from "react"
 import ReactDOM from "react-dom/client"
 import NiceModal from "@ebay/nice-modal-react"
@@ -7,6 +9,9 @@ import "./index.css"
 
 import store from "./store"
 import { Provider } from "react-redux"
+
+// import { CreateVirtualLogger } from "./util"
+// CreateVirtualLogger()
 
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>

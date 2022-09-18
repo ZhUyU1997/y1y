@@ -13,9 +13,12 @@
     "@ebay/nice-modal-react": "^1.2.6",
     "@react-hookz/web": "^15.1.0",
     "@reduxjs/toolkit": "^1.8.5",
+    "core-js": "^3.25.1",
+    "ismobilejs": "^1.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-redux": "^8.0.2"
+    "react-redux": "^8.0.2",
+    "screenfull": "^6.0.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",
