@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react"
+import { useEffect, useLayoutEffect } from "react"
 import Popup, { SettingPopup } from "./Popup"
 import NiceModal from "@ebay/nice-modal-react"
 import { GetBlockImageByType } from "./blockImage"
@@ -27,6 +27,7 @@ import skill1 from "./assets/button/skill1.png"
 import skill2 from "./assets/button/skill2.png"
 import skill3 from "./assets/button/skill3.png"
 import setting from "./assets/setting.png"
+import { useRegisterSW } from "virtual:pwa-register/react"
 
 function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
     return (
@@ -400,7 +401,37 @@ function MainScreen() {
     )
 }
 
+function useUpdatePrompt() {
+    /// https://vite-plugin-pwa.netlify.app/frameworks/react.html#prompt-for-update
+    const {
+        offlineReady: [offlineReady, setOfflineReady],
+        needRefresh: [needRefresh, setNeedRefresh],
+        updateServiceWorker,
+    } = useRegisterSW({
+        onRegistered(r) {
+            // eslint-disable-next-line prefer-template
+            console.log("SW Registered: " + r)
+        },
+        onRegisterError(error) {
+            console.log("SW registration error", error)
+        },
+    })
+
+    useEffect(() => {
+        if (needRefresh) {
+            NiceModal.show(Popup, {
+                title: "版本更新了",
+                button: "确认",
+            }).then(() => {
+                updateServiceWorker(true)
+            })
+        }
+    }, [needRefresh, updateServiceWorker])
+}
+
 function App() {
+    useUpdatePrompt()
+
     return (
         <div
             style={{

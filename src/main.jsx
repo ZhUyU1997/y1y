@@ -10,21 +10,6 @@ import "./index.css"
 import store from "./store"
 import { Provider } from "react-redux"
 
-import Popup from "./Popup"
-import { registerSW } from "virtual:pwa-register"
-
-const updateSW = registerSW({
-    onNeedRefresh() {
-        NiceModal.show(Popup, {
-            title: "版本更新了",
-            button: "确认",
-        }).then(() => {
-            updateSW()
-        })
-    },
-    onOfflineReady() {},
-})
-
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
         <NiceModal.Provider>

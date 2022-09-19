@@ -1,5 +1,5 @@
 import NiceModal, { useModal } from "@ebay/nice-modal-react"
-import { CreateVirtualLogger, getVersion } from "./util"
+import { CreateVirtualLogger, getTime, getVersion } from "./util"
 
 function Title({ children }) {
     return (
@@ -169,7 +169,7 @@ export const SettingPopup = NiceModal.create(() => {
                     lineHeight: 1.5,
                 }}
             >
-                <Info>当前版本：{getVersion()}</Info>
+                <Info>当前版本：{getVersion()}-{getTime()}</Info>
                 <div
                     style={{
                         display: "flex",

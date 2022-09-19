@@ -1,3 +1,5 @@
+import dayjs from "dayjs"
+
 export function CreateVirtualLogger() {
     var output = document.createElement("p")
     output.id = "logger"
@@ -20,5 +22,9 @@ export function CreateVirtualLogger() {
 }
 
 export function getVersion() {
-    return "v0.0.2"
+    return "v0.0.3"
+}
+
+export function getTime() {
+    return dayjs().format("YYYY-MM-DD HH:mm:ss")
 }
