@@ -102,6 +102,8 @@ function Button({ children, ...props }) {
 export default NiceModal.create(({ title, button }) => {
     // Use a hook to manage the modal state
     const modal = useModal()
+    const buttonArr = Array.isArray(button) ? button : [button]
+
     return (
         <div
             style={{
@@ -128,14 +130,24 @@ export default NiceModal.create(({ title, button }) => {
                 }}
             >
                 <Title>{title}</Title>
-                <Button
-                    onClick={() => {
-                        modal.resolve()
-                        modal.remove()
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 20,
                     }}
                 >
-                    {button}
-                </Button>
+                    {buttonArr.map((text, index) => (
+                        <Button
+                            key={text}
+                            onClick={() => {
+                                modal.resolve(index)
+                                modal.remove()
+                            }}
+                        >
+                            {text}
+                        </Button>
+                    ))}
+                </div>
             </div>
         </div>
     )
@@ -169,7 +181,9 @@ export const SettingPopup = NiceModal.create(() => {
                     lineHeight: 1.5,
                 }}
             >
-                <Info>当前版本：{getVersion()}-{getTime()}</Info>
+                <Info>
+                    当前版本：{getVersion()}-{getTime()}
+                </Info>
                 <div
                     style={{
                         display: "flex",

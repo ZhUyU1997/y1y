@@ -233,9 +233,10 @@ function useGame(data) {
         } else if (lose) {
             NiceModal.show(Popup, {
                 title: "槽位已满",
-                button: "重新挑战",
-            }).then(() => {
-                dispatch(initGame(data))
+                button: ["撤销操作", "重新挑战"],
+            }).then((index) => {
+                if (index === 0) dispatch(cancelMove(data))
+                else dispatch(initGame(data))
             })
         }
     }, [win, lose, dispatch, data])

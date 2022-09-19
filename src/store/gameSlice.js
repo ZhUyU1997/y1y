@@ -137,11 +137,16 @@ function updateData(state) {
         })
     checkIfDim(state.blocks)
 
+    checkWinOrLose(state)
+}
+
+function checkWinOrLose(state) {
     state.win = state.blocks.every((block) => block.removed)
     state.lose =
         state.blocks.filter((block) => block.moved && !block.removed).length >=
         7
 }
+
 export const gameSlice = createSlice({
     name: "game",
     initialState: {
@@ -181,6 +186,7 @@ export const gameSlice = createSlice({
 
         cancelMove: (state) => {
             state.blocks = state.record.pop() ?? state.blocks
+            checkWinOrLose(state)
         },
     },
 })
