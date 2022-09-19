@@ -16,7 +16,7 @@ import isMobile from "ismobilejs"
 
 import "./App.css"
 
-import data from "./level-data/90019.json"
+import data from "./level-data/90020.json"
 import block_bg from "./assets/block_bg.png"
 import bg from "./assets/bg.png"
 import area_center from "./assets/fence/center.png"
