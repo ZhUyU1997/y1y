@@ -10,8 +10,20 @@ import "./index.css"
 import store from "./store"
 import { Provider } from "react-redux"
 
-// import { CreateVirtualLogger } from "./util"
-// CreateVirtualLogger()
+import Popup from "./Popup"
+import { registerSW } from "virtual:pwa-register"
+
+const updateSW = registerSW({
+    onNeedRefresh() {
+        NiceModal.show(Popup, {
+            title: "版本更新了",
+            button: "确认",
+        }).then(() => {
+            updateSW()
+        })
+    },
+    onOfflineReady() {},
+})
 
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
@@ -22,3 +34,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </NiceModal.Provider>
     </React.StrictMode>
 )
+
+// import { CreateVirtualLogger } from "./util"
+// CreateVirtualLogger()

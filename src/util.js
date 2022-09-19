@@ -1,8 +1,4 @@
-import isMobile from "ismobilejs"
-
 export function CreateVirtualLogger() {
-    // if (isMobile(window.navigator).any === false)
-    //     return
     var output = document.createElement("p")
     output.id = "logger"
     document.body.appendChild(output)
@@ -21,4 +17,8 @@ export function CreateVirtualLogger() {
         })
         output.innerHTML += items.join(" ") + "<br />"
     }
+}
+
+export function getVersion() {
+    return "v0.0.2"
 }

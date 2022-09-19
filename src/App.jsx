@@ -399,6 +399,7 @@ function MainScreen() {
         </div>
     )
 }
+
 function App() {
     return (
         <div
