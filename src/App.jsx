@@ -1,5 +1,5 @@
 import { useLayoutEffect } from "react"
-import Popup from "./Popup"
+import Popup, { SettingPopup } from "./Popup"
 import NiceModal from "@ebay/nice-modal-react"
 import { GetBlockImageByType } from "./blockImage"
 import { useWindowSize } from "@react-hookz/web/esm"
@@ -26,6 +26,7 @@ import blue_button from "./assets/button/blue.png"
 import skill1 from "./assets/button/skill1.png"
 import skill2 from "./assets/button/skill2.png"
 import skill3 from "./assets/button/skill3.png"
+import setting from "./assets/setting.png"
 
 function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
     return (
@@ -204,15 +205,52 @@ function Skill({ colNum, rowNum, onUseSkill }) {
     )
 }
 
-function getScale(size) {
-    return size.width / size.height < 65 / 115.0
-        ? size.width / (15 * 65)
-        : size.height / (15 * 115)
+function getScale(size, width, height) {
+    return size.width / size.height < width / height
+        ? size.width / width
+        : size.height / height
 }
-function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
-    const size = useWindowSize()
-    const scale = getScale(size)
 
+function useGame(data) {
+    const blocks = useSelector((state) => state.game.blocks)
+    const win = useSelector((state) => state.game.win)
+    const lose = useSelector((state) => state.game.lose)
+
+    const dispatch = useDispatch()
+    useLayoutEffect(() => {
+        dispatch(initGame(data))
+    }, [])
+
+    useLayoutEffect(() => {
+        if (win) {
+            NiceModal.show(Popup, {
+                title: "恭喜你通关了",
+                button: "再来一局",
+            }).then(() => {
+                dispatch(initGame(data))
+            })
+        } else if (lose) {
+            NiceModal.show(Popup, {
+                title: "槽位已满",
+                button: "重新挑战",
+            }).then(() => {
+                dispatch(initGame(data))
+            })
+        }
+    }, [win, lose, dispatch, data])
+    return {
+        blocks,
+        dispatch,
+        shuffleBlock() {
+            dispatch(shuffleBlock())
+        },
+        cancelMove() {
+            dispatch(cancelMove())
+        },
+    }
+}
+
+function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
     const moveOutAreaCol = 5
     const moveOutAreaRow = 80
 
@@ -272,14 +310,12 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
     return (
         <div
             style={{
-                width: 15 * 65,
-                height: 15 * 115,
-                minWidth: 15 * 65,
-                minHeight: 15 * 115,
+                width,
+                height,
+                minWidth: width,
+                minHeight: height,
                 display: "flex",
                 position: "relative",
-                willChange: "transform",
-                transform: `scale(${scale})`,
             }}
         >
             <MoveOutArea
@@ -296,50 +332,74 @@ function ChessBoard({ blocks, onClickBlock, onUseSkill }) {
     )
 }
 
-function useGame(data) {
-    const blocks = useSelector((state) => state.game.blocks)
-    const win = useSelector((state) => state.game.win)
-    const lose = useSelector((state) => state.game.lose)
-
-    const dispatch = useDispatch()
-    useLayoutEffect(() => {
-        dispatch(initGame(data))
-    }, [])
-
-    useLayoutEffect(() => {
-        if (win) {
-            NiceModal.show(Popup, {
-                title: "恭喜你通关了",
-                button: "再来一局",
-            }).then(() => {
-                dispatch(initGame(data))
-            })
-        } else if (lose) {
-            NiceModal.show(Popup, {
-                title: "槽位已满",
-                button: "重新挑战",
-            }).then(() => {
-                dispatch(initGame(data))
-            })
-        }
-    }, [win, lose, dispatch, data])
-    return {
-        blocks,
-        dispatch,
-        shuffleBlock() {
-            dispatch(shuffleBlock())
-        },
-        cancelMove() {
-            dispatch(cancelMove())
-        },
-    }
+function Setting({ style, ...props }) {
+    return (
+        <div
+            tabIndex={-1}
+            style={{
+                boxSizing: "border-box",
+                willChange: "transform",
+                width: 120,
+                height: 120,
+                backgroundImage: `url(${setting})`,
+                backgroundRepeat: "no-repeat",
+                backgroundSize: "contain",
+                ...style,
+            }}
+            {...props}
+        ></div>
+    )
 }
 
-function App() {
+function MainScreen() {
     const size = useWindowSize()
-    const scale = getScale(size)
-
+    const width = 15 * 65
+    const height = 15 * 115 + 120
+    const scale = getScale(size, width, height)
     const { blocks, dispatch, shuffleBlock, cancelMove } = useGame(data)
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                minWidth: width,
+                minHeight: height,
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                willChange: "transform",
+                transform: `scale(${scale})`,
+                overflow: "hidden",
+            }}
+        >
+            <Setting
+                onClick={() => {
+                    NiceModal.show(SettingPopup)
+                }}
+            ></Setting>
+            <ChessBoard
+                width={15 * 65}
+                height={15 * 115}
+                blocks={blocks}
+                onClickBlock={(block) => {
+                    // if (block.overlap == false) board.moveOutBlock(block)
+                    dispatch(moveOutBlock(block))
+
+                    // forceUpdate({})
+                }}
+                onUseSkill={(index) => {
+                    if (index == 1) {
+                        cancelMove()
+                    } else if (index == 2) {
+                        shuffleBlock()
+                    }
+                }}
+            ></ChessBoard>
+        </div>
+    )
+}
+function App() {
     return (
         <div
             style={{
@@ -358,22 +418,7 @@ function App() {
             //     }
             // }}
         >
-            <ChessBoard
-                blocks={blocks}
-                onClickBlock={(block) => {
-                    // if (block.overlap == false) board.moveOutBlock(block)
-                    dispatch(moveOutBlock(block))
-
-                    // forceUpdate({})
-                }}
-                onUseSkill={(index) => {
-                    if (index == 1) {
-                        cancelMove()
-                    } else if (index == 2) {
-                        shuffleBlock()
-                    }
-                }}
-            ></ChessBoard>
+            <MainScreen></MainScreen>
         </div>
     )
 }
