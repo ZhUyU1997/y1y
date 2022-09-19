@@ -1,10 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import dayjs from "dayjs"
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/y1y/',
+  define: {
+    __APP_VERSION__: JSON.stringify("v0.0.5"),
+    __APP_BUILD_TIME: Date.now()
+  },
   plugins: [react(), VitePWA({
     workbox: {
       globPatterns: ['**/*.{js,css,html,ico,png,svg}']

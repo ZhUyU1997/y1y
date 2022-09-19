@@ -22,9 +22,9 @@ export function CreateVirtualLogger() {
 }
 
 export function getVersion() {
-    return "v0.0.3"
+    return __APP_VERSION__
 }
 
 export function getTime() {
-    return dayjs().format("YYYY-MM-DD HH:mm:ss")
+    return dayjs(__APP_BUILD_TIME).format("YYYY-MM-DD HH:mm:ss")
 }
