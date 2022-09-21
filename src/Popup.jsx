@@ -6,6 +6,7 @@ function Title({ children }) {
         <div
             style={{
                 fontSize: "10vw",
+                fontWeight: 600,
                 backgroundColor: "black",
                 color: "yellow",
                 borderRadius: 5,
@@ -77,7 +78,8 @@ function Button({ children, ...props }) {
     return (
         <div
             style={{
-                fontSize: "5vw",
+                fontSize: "4vw",
+                fontWeight: 600,
                 borderRadius: 10,
                 backgroundColor: "white",
                 color: "black",
