@@ -77,7 +77,7 @@ function Button({ children, ...props }) {
     return (
         <div
             style={{
-                fontSize: "5.5vw",
+                fontSize: "5vw",
                 borderRadius: 10,
                 backgroundColor: "white",
                 color: "black",
