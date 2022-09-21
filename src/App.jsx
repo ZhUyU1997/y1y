@@ -38,6 +38,7 @@ function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
                 boxSizing: "border-box",
                 width: 120,
                 height: 135,
+                willChange: "transform filter opacity",
                 position: "absolute",
                 left: colNum * 15,
                 top: rowNum * 15,
@@ -83,56 +84,62 @@ function MoveOutArea({ colNum, rowNum }) {
                 position: "absolute",
                 left: (colNum - 1) * 15,
                 top: (rowNum - 1) * 15,
+                WebkitBorderImage: `url(${area_center})`,
                 borderImage: `url(${area_center})`,
                 borderImageSlice: "30 30 fill",
                 borderImageWidth: "30px 30px",
+                // https://stackoverflow.com/questions/21025212/border-image-not-showing-in-safari
+                borderStyle: "solid",
+                borderWidth: 0.1,
             }}
         >
             <div
                 style={{
                     boxSizing: "border-box",
                     willChange: "transform",
-                    width: 120 * 7 + 66,
-                    height: 185,
+                    width: 120 * 7 + 72,
+                    height: 80,
                     position: "absolute",
                     left: -20,
                     top: 145,
                     borderRadius: 10,
                     backgroundImage: `url(${area_row})`,
                     backgroundRepeat: "no-repeat",
-                    backgroundSize: "contain",
+                    backgroundSize: "100%",
+                    backgroundPosition: "center",
                 }}
-            ></div>
-            <div
-                style={{
-                    boxSizing: "border-box",
-                    willChange: "transform",
-                    width: 30,
-                    height: 245,
-                    position: "absolute",
-                    left: -20,
-                    top: -25,
-                    borderRadius: 10,
-                    backgroundImage: `url(${area_col})`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundSize: "contain",
-                }}
-            ></div>
-            <div
-                style={{
-                    boxSizing: "border-box",
-                    willChange: "transform",
-                    width: 30,
-                    height: 245,
-                    position: "absolute",
-                    right: -20,
-                    top: -25,
-                    borderRadius: 10,
-                    backgroundImage: `url(${area_col})`,
-                    backgroundRepeat: "no-repeat",
-                    backgroundSize: "contain",
-                }}
-            ></div>
+            >
+                <div
+                    style={{
+                        boxSizing: "border-box",
+                        willChange: "transform",
+                        width: 30,
+                        height: 245,
+                        position: "absolute",
+                        left: 0,
+                        bottom: 5,
+                        borderRadius: 10,
+                        backgroundImage: `url(${area_col})`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "contain",
+                    }}
+                ></div>
+                <div
+                    style={{
+                        boxSizing: "border-box",
+                        willChange: "transform",
+                        width: 30,
+                        height: 245,
+                        position: "absolute",
+                        right: 0,
+                        bottom: 5,
+                        borderRadius: 10,
+                        backgroundImage: `url(${area_col})`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundSize: "contain",
+                    }}
+                ></div>
+            </div>
         </div>
     )
 }
@@ -253,7 +260,7 @@ function useGame(data) {
 }
 
 function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
-    const moveOutAreaCol = 5
+    const moveOutAreaCol = 4.5
     const moveOutAreaRow = 80
 
     const Blocks = blocks.map((block) => {
