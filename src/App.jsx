@@ -28,6 +28,7 @@ import skill2 from "./assets/button/skill2.png"
 import skill3 from "./assets/button/skill3.png"
 import setting from "./assets/setting.png"
 import { useRegisterSW } from "virtual:pwa-register/react"
+import { useState } from "react"
 
 function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
     return (
@@ -144,12 +145,14 @@ function MoveOutArea({ colNum, rowNum }) {
     )
 }
 
-function SkillButton({ skillImage, style, ...props }) {
+function SkillButton({ skillImage, style, onClick, ...props }) {
+    const [count, setCount] = useState(0)
     return (
         <div
             className="skillbtn"
             tabIndex={-1}
             style={{
+                position: "relative",
                 boxSizing: "border-box",
                 willChange: "transform",
                 width: 180,
@@ -161,6 +164,10 @@ function SkillButton({ skillImage, style, ...props }) {
                 backgroundImage: `url(${skill1})`,
                 padding: 10,
                 ...style,
+            }}
+            onClick={() => {
+                onClick?.()
+                setCount((count) => count + 1)
             }}
             {...props}
         >
@@ -174,6 +181,27 @@ function SkillButton({ skillImage, style, ...props }) {
                     backgroundSize: "contain",
                 }}
             ></div>
+
+            <div
+                style={{
+                    position: "absolute",
+                    backgroundColor: "black",
+                    borderRadius: 20,
+                    right: -20,
+                    top: -12,
+                    height: 40,
+                    minWidth: 40,
+                    boxShadow: "2px 4px rgba(0,0,0,0.3)",
+                    display: "flex",
+                    textAlign: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    lineHeight: "40px",
+                    fontSize: 23,
+                }}
+            >
+                {count === 0 ? "+" : count}
+            </div>
         </div>
     )
 }
