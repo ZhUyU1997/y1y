@@ -29,8 +29,23 @@ import skill3 from "./assets/button/skill3.png"
 import setting from "./assets/setting.png"
 import { useRegisterSW } from "virtual:pwa-register/react"
 import { useState } from "react"
+import music from "./assets/18367545a1e_063.mp3?url"
+import { mdiVolumeMute, mdiVolumeHigh } from "@mdi/js"
 
-function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
+function vibrate() {
+    console.log("window.navigator?.vibrate", window.navigator?.vibrate)
+    window.navigator?.vibrate(1000)
+}
+
+function Block({
+    type,
+    colNum,
+    rowNum,
+    overlap = false,
+    style,
+    onClick,
+    ...props
+}) {
     return (
         <div
             className={`block ${overlap ? "" : "active"}`}
@@ -57,6 +72,10 @@ function Block({ type, colNum, rowNum, overlap = false, style, ...props }) {
                 paddingTop: 13,
                 paddingBottom: 21,
                 ...style,
+            }}
+            onClick={() => {
+                onClick?.()
+                vibrate()
             }}
             {...props}
         >
@@ -167,6 +186,7 @@ function SkillButton({ skillImage, style, onClick, ...props }) {
             }}
             onClick={() => {
                 onClick?.()
+                vibrate()
                 setCount((count) => count + 1)
             }}
             {...props}
@@ -388,6 +408,46 @@ function Setting({ style, ...props }) {
     )
 }
 
+function AudioPlayer({ style, ...props }) {
+    const [audio] = useState(() => new Audio(music))
+    const [isPlay, setIsPlay] = useState(false)
+    useEffect(() => {
+        const onCanPlay = async (event) => {
+            try {
+                await audio.play()
+                setIsPlay(true)
+            } catch (error) {
+                setIsPlay(false)
+            }
+        }
+        audio.addEventListener("canplaythrough", onCanPlay)
+        return () => {
+            audio.removeEventListener("canplaythrough", onCanPlay)
+        }
+    }, [audio])
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            style={{
+                width: 120,
+                height: 120,
+                ...style,
+            }}
+            onClick={() => {
+                if (audio.paused) {
+                    audio?.play()
+                    setIsPlay(true)
+                } else {
+                    audio?.pause()
+                    setIsPlay(false)
+                }
+            }}
+        >
+            <path d={isPlay ? mdiVolumeHigh : mdiVolumeMute}></path>
+        </svg>
+    )
+}
+
 function MainScreen() {
     const size = useWindowSize()
     const width = 15 * 65
@@ -410,11 +470,24 @@ function MainScreen() {
                 overflow: "hidden",
             }}
         >
-            <Setting
-                onClick={() => {
-                    NiceModal.show(SettingPopup)
+            <div
+                style={{
+                    height: 120,
+                    display: "flex",
                 }}
-            ></Setting>
+            >
+                <Setting
+                    onClick={() => {
+                        NiceModal.show(SettingPopup)
+                    }}
+                ></Setting>
+                <AudioPlayer
+                    style={{
+                        marginLeft: 10,
+                    }}
+                ></AudioPlayer>
+            </div>
+
             <ChessBoard
                 width={15 * 65}
                 height={15 * 115}

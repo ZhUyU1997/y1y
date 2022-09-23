@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ebay/nice-modal-react": "^1.2.6",
+    "@mdi/js": "^7.0.96",
     "@react-hookz/web": "^15.1.0",
     "@reduxjs/toolkit": "^1.8.5",
     "core-js": "^3.25.1",

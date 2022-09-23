@@ -12,7 +12,7 @@ export default defineConfig({
   },
   plugins: [react(), VitePWA({
     workbox: {
-      globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3}']
     },
     manifest: {
       name: '狼了个狼',
