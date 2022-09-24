@@ -11,6 +11,12 @@ function shuffle(t) {
     return t
 }
 
+export const BLOCK_STATE = {
+    INIT: 1,
+    MOVED: 2,
+    REMOVED: 4,
+}
+
 function blockOverlap(a, b) {
     const r = {
         x: 0,
@@ -39,7 +45,11 @@ function blockOverlap(a, b) {
 function checkIfDim(blocks) {
     const checkedBlocks = []
     blocks
-        .filter((block) => !block.moved && !block.removed)
+        .filter(
+            (block) =>
+                block.state !== BLOCK_STATE.MOVED &&
+                block.state !== BLOCK_STATE.REMOVED
+        )
         .forEach((block) => {
             block.overlap = false
 
@@ -83,25 +93,24 @@ function createBlockTypeObj(data) {
         .map((i) => ({
             ...i,
             colNum: i.rolNum,
-            removed: false,
-            moved: false,
             overlap: false,
             type: 0 === i.type ? blockTypeArr.pop() : i.type,
+            state: BLOCK_STATE.INIT,
         }))
 
+    if (blockTypeArr.length !== 0) throw new Error("blockTypeArr.length !==0")
     checkIfDim(blocks)
     return blocks
 }
 
 function updateData(state) {
     const blocks = state.blocks
-        .filter((block) => block.moved && !block.removed)
+        .filter((block) => block.state === BLOCK_STATE.MOVED)
         .sort((a, b) => a.order - b.order)
         .reduce((list, block) => {
             const index = list.findLastIndex((b) => b.type === block.type)
 
             if (index !== -1) {
-                console.log("find same")
                 list.splice(index + 1, 0, block)
             } else {
                 list.push(block)
@@ -109,12 +118,18 @@ function updateData(state) {
             return list
         }, [])
 
-    blocks
-        .filter((block) => block.moved && !block.removed)
-        .forEach((block, index) => {
-            block.order = index
-        })
+    blocks.forEach((block, index) => {
+        block.order = index
+    })
 
+    checkIfDim(state.blocks)
+    return blocks.length
+}
+
+function _removeBlocks(state) {
+    const blocks = state.blocks
+        .filter((block) => block.state === BLOCK_STATE.MOVED)
+        .sort((a, b) => a.order - b.order)
     const group = blocks.reduce((group, block) => {
         const { type } = block
         group[type] ??= []
@@ -125,26 +140,57 @@ function updateData(state) {
     Object.values(group)
         .filter((blocks) => blocks.length >= 3)
         .forEach((blocks) => {
-            blocks.forEach((block) => {
-                block.removed = true
+            blocks.forEach((block, index) => {
+                // just remove three blocks even if over three
+                // if (index < 3)
+                block.state = BLOCK_STATE.REMOVED
             })
         })
 
     blocks
-        .filter((block) => block.moved && !block.removed)
+        .filter((block) => block.state === BLOCK_STATE.MOVED)
         .forEach((block, index) => {
             block.order = index
         })
-    checkIfDim(state.blocks)
-
-    checkWinOrLose(state)
+    state.willRemove = false
 }
 
+function checkIfNeedRemove(state) {
+    const blocks = state.blocks
+        .filter((block) => block.state === BLOCK_STATE.MOVED)
+        .sort((a, b) => a.order - b.order)
+    const group = blocks.reduce((group, block) => {
+        const { type } = block
+        group[type] ??= []
+        group[type].push(block)
+        return group
+    }, {})
+    const result = Object.values(group).some((blocks) => blocks.length >= 3)
+
+    state.willRemove = result
+    return result
+}
 function checkWinOrLose(state) {
-    state.win = state.blocks.every((block) => block.removed)
+    state.win = state.blocks.every(
+        (block) => block.state === BLOCK_STATE.REMOVED
+    )
     state.lose =
-        state.blocks.filter((block) => block.moved && !block.removed).length >=
-        7
+        state.blocks.filter((block) => block.state === BLOCK_STATE.MOVED)
+            .length >= 7
+}
+
+function backup(state) {
+    const { record, ...reset } = state
+    state.record.push(cloneDeep(reset))
+}
+
+function recovery(state) {
+    const { record, ...reset } = state
+    const { blocks, win, lose, willRemove } = state.record.pop() ?? reset
+    state.blocks = blocks
+    state.win = win
+    state.lose = lose
+    state.willRemove = willRemove
 }
 
 export const gameSlice = createSlice({
@@ -153,6 +199,7 @@ export const gameSlice = createSlice({
         blocks: [],
         win: false,
         lose: false,
+        willRemove: false,
         record: [],
     },
     reducers: {
@@ -164,19 +211,23 @@ export const gameSlice = createSlice({
             state.record = []
         },
         moveOutBlock: (state, action) => {
-            state.record.push(cloneDeep(state.blocks))
+            if (state.willRemove) return
+            backup(state)
 
             const { id } = action.payload
             const block = state.blocks.find((b) => b.id === id)
-            block.moved = true
+            block.state = BLOCK_STATE.MOVED
             block.order = 100
             updateData(state)
+
+            if (checkIfNeedRemove(state) === false) checkWinOrLose(state)
         },
         shuffleBlock: (state) => {
-            state.record.push(cloneDeep(state.blocks))
-
+            backup(state)
             const blocks = state.blocks.filter(
-                (block) => !block.moved && !block.removed
+                (block) =>
+                    block.state !== BLOCK_STATE.MOVED &&
+                    block.state !== BLOCK_STATE.REMOVED
             )
             const blockTypeData = shuffle(blocks.map((block) => block.type))
             blocks.forEach((block) => {
@@ -185,13 +236,22 @@ export const gameSlice = createSlice({
         },
 
         cancelMove: (state) => {
-            state.blocks = state.record.pop() ?? state.blocks
+            recovery(state)
+            checkWinOrLose(state)
+        },
+        removeBlocks: (state) => {
+            _removeBlocks(state)
             checkWinOrLose(state)
         },
     },
 })
-// 每个 case reducer 函数会生成对应的 Action creators
-export const { initGame, moveOutBlock, cancelMove, shuffleBlock } =
-    gameSlice.actions
+
+export const {
+    initGame,
+    moveOutBlock,
+    cancelMove,
+    removeBlocks,
+    shuffleBlock,
+} = gameSlice.actions
 
 export default gameSlice.reducer

@@ -5,10 +5,12 @@ import { GetBlockImageByType } from "./blockImage"
 import { useWindowSize } from "@react-hookz/web/esm"
 import { useSelector, useDispatch } from "react-redux"
 import {
+    BLOCK_STATE,
     cancelMove,
     initGame,
     moveOutBlock,
     shuffleBlock,
+    removeBlocks,
 } from "./store/gameSlice"
 
 import screenfull from "screenfull"
@@ -271,6 +273,7 @@ function useGame(data) {
     const blocks = useSelector((state) => state.game.blocks)
     const win = useSelector((state) => state.game.win)
     const lose = useSelector((state) => state.game.lose)
+    const willRemove = useSelector((state) => state.game.willRemove)
 
     const dispatch = useDispatch()
     useLayoutEffect(() => {
@@ -295,6 +298,15 @@ function useGame(data) {
             })
         }
     }, [win, lose, dispatch, data])
+
+    useLayoutEffect(() => {
+        if (willRemove) {
+            setTimeout(() => {
+                dispatch(removeBlocks())
+            }, 400)
+        }
+    }, [dispatch, willRemove])
+
     return {
         blocks,
         dispatch,
@@ -303,6 +315,9 @@ function useGame(data) {
         },
         cancelMove() {
             dispatch(cancelMove())
+        },
+        moveOutBlock(block) {
+            dispatch(moveOutBlock(block))
         },
     }
 }
@@ -316,7 +331,7 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
 
         const { rolNum: colNum, rowNum, overlap } = block
 
-        if (block.removed) {
+        if (block.state === BLOCK_STATE.REMOVED) {
             return (
                 <Block
                     key={id}
@@ -332,7 +347,7 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
                     }}
                 />
             )
-        } else if (block.moved)
+        } else if (block.state === BLOCK_STATE.MOVED)
             return (
                 <Block
                     key={id}
@@ -453,7 +468,7 @@ function MainScreen() {
     const width = 15 * 65
     const height = 15 * 115 + 120
     const scale = getScale(size, width, height)
-    const { blocks, dispatch, shuffleBlock, cancelMove } = useGame(data)
+    const { blocks, shuffleBlock, cancelMove, moveOutBlock } = useGame(data)
 
     return (
         <div
@@ -492,12 +507,7 @@ function MainScreen() {
                 width={15 * 65}
                 height={15 * 115}
                 blocks={blocks}
-                onClickBlock={(block) => {
-                    // if (block.overlap == false) board.moveOutBlock(block)
-                    dispatch(moveOutBlock(block))
-
-                    // forceUpdate({})
-                }}
+                onClickBlock={moveOutBlock}
                 onUseSkill={(index) => {
                     if (index == 1) {
                         cancelMove()
