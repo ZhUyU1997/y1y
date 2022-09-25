@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect } from "react"
 import Popup, { SettingPopup } from "./Popup"
 import NiceModal from "@ebay/nice-modal-react"
 import { GetBlockImageByType } from "./blockImage"
-import { useWindowSize } from "@react-hookz/web/esm"
+import { useMeasure, useWindowSize } from "@react-hookz/web/esm"
 import { useSelector, useDispatch } from "react-redux"
 import {
     BLOCK_STATE,
@@ -19,7 +19,7 @@ import isMobile from "ismobilejs"
 
 import "./App.css"
 
-import data from "./level-data/90024.json"
+import data from "./level-data/90025.json"
 import block_bg from "./assets/block_bg.png"
 import bg from "./assets/bg.png"
 import area_center from "./assets/fence/center.png"
@@ -479,30 +479,38 @@ function AudioPlayer({ style, ...props }) {
 
 function MainScreen() {
     const size = useWindowSize()
-    const width = 15 * 65
-    const height = 15 * 125 + 120
-    const scale = getScale(size, width, height)
     const { blocks, shuffleBlock, cancelMove, moveOutBlock, autoMove } =
         useGame(data)
+    const [rect, ref] = useMeasure()
+    const [scale, setScale] = useState(0)
+    console.log(rect, scale)
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useLayoutEffect(() => {
+        setScale(
+            getScale(
+                size,
+                rect?.width ?? ref.current.scrollWidth,
+                rect?.height ?? ref.current.scrollHeight
+            )
+        )
+    })
     return (
         <div
+            ref={ref}
             style={{
-                width,
-                height,
-                minWidth: width,
-                minHeight: height,
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
                 willChange: "transform",
                 transform: `scale(${scale})`,
-                overflow: "hidden",
             }}
         >
             <div
                 style={{
                     height: 120,
+                    paddingTop: 25,
+                    paddingBottom: 25,
                     display: "flex",
                 }}
             >
@@ -520,7 +528,7 @@ function MainScreen() {
 
             <ChessBoard
                 width={15 * 65}
-                height={15 * 125}
+                height={15 * 120}
                 blocks={blocks}
                 onClickBlock={moveOutBlock}
                 onUseSkill={(index) => {
