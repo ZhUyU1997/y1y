@@ -1,5 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
 import cloneDeep from "lodash/cloneDeep"
+import countBy from "lodash/countBy"
+import random from "random"
 
 function shuffle(t) {
     for (let e = t.length - 1; e >= 0; e--) {
@@ -59,13 +61,13 @@ function checkIfDim(blocks) {
                 if (
                     blockOverlap(
                         {
-                            x: block.rolNum,
+                            x: block.colNum,
                             y: block.rowNum,
                             w: 8,
                             h: 8,
                         },
                         {
-                            x: lowerBlock.rolNum,
+                            x: lowerBlock.colNum,
                             y: lowerBlock.rowNum,
                             w: 8,
                             h: 8,
@@ -79,7 +81,47 @@ function checkIfDim(blocks) {
         })
 }
 
-function createBlockTypeObj(data) {
+function getBottomBlocks(blocks) {
+    const checkedBlocks = []
+    const bottomBlocks = []
+    blocks
+        .filter((block) => block.state !== BLOCK_STATE.INIT)
+        .forEach((block) => {
+            block.overlap = false
+            let isBottom = true
+            for (const lowerBlock of checkedBlocks) {
+                if (lowerBlock.overlap) {
+                    isBottom = false
+                    continue
+                }
+
+                if (
+                    blockOverlap(
+                        {
+                            x: block.rolNum,
+                            y: block.rowNum,
+                            w: 8,
+                            h: 8,
+                        },
+                        {
+                            x: lowerBlock.rolNum,
+                            y: lowerBlock.rowNum,
+                            w: 8,
+                            h: 8,
+                        }
+                    )
+                ) {
+                    isBottom = false
+                    lowerBlock.overlap = true
+                }
+            }
+            if (isBottom) bottomBlocks.push(block)
+            checkedBlocks.push(block)
+        })
+    return bottomBlocks
+}
+
+function createRandomBlockTypeObj(data) {
     const { blockTypeData, levelData } = data
     let blockTypeArr = []
     for (const [type, count] of Object.entries(blockTypeData)) {
@@ -100,7 +142,76 @@ function createBlockTypeObj(data) {
 
     if (blockTypeArr.length !== 0) throw new Error("blockTypeArr.length !==0")
     checkIfDim(blocks)
-    return blocks
+    return [blocks, []]
+}
+
+function createSolvableBlockTypeObj(data) {
+    const { blockTypeData, levelData } = data
+    const blockTypeCount = cloneDeep(blockTypeData)
+
+    Object.entries(
+        countBy(
+            Object.values(levelData)
+                .flatMap((i) => i)
+                .filter((block) => block.type !== 0)
+                .map((block) => block.type)
+        )
+    ).forEach(([type, count]) => {
+        if (type in blockTypeCount) blockTypeCount[type] += count / 3
+        else blockTypeCount[type] = count / 3
+    })
+
+    const blockTypeArr = Object.entries(blockTypeCount)
+        .map(([type, count]) => Array(count).fill(type))
+        .flatMap((i) => i)
+
+    shuffle(blockTypeArr)
+
+    const blocks = Object.values(levelData)
+        .flatMap((i) => i)
+        .map((i) => ({
+            ...i,
+            colNum: i.rolNum,
+            overlap: false,
+            state: BLOCK_STATE.REMOVED,
+        }))
+
+    const movedBlockType = []
+    const moveSteps = []
+    while (blockTypeArr.length !== 0 || movedBlockType.length !== 0) {
+        const isRecoveryFromRemoved = true //random.boolean() || true
+        const mustRecoveryFromMoved =
+            movedBlockType.length > 4 ||
+            blockTypeArr.length === 0 ||
+            movedBlockType.some((type) => type === blockTypeArr.at(-1))
+        const mustRecoveryFromRemoved = movedBlockType.length === 0
+
+        const canRecoveryFromRemoved =
+            (!mustRecoveryFromMoved && isRecoveryFromRemoved) ||
+            mustRecoveryFromRemoved
+
+        const bottomBlocks = getBottomBlocks(blocks)
+        const block = bottomBlocks[random.int(0, bottomBlocks.length - 1)]
+        block.state = BLOCK_STATE.INIT
+        moveSteps.push(block.id)
+        // console.log(movedBlockType, canRecoveryFromRemoved ? "FromRemoved" : "FromMoved")
+
+        if (canRecoveryFromRemoved) {
+            const type = blockTypeArr.pop()
+            movedBlockType.push(type, type)
+            block.type = type
+        } else {
+            const index = random.int(0, movedBlockType.length - 1)
+            const type = movedBlockType[index]
+            movedBlockType.splice(index, 1)
+            block.type = type
+        }
+    }
+    if (blockTypeArr.length !== 0) throw new Error("blockTypeArr.length !==0")
+    checkIfDim(blocks)
+
+    moveSteps.reverse()
+    return [blocks, moveSteps]
 }
 
 function updateData(state) {
@@ -121,6 +232,31 @@ function updateData(state) {
     blocks.forEach((block, index) => {
         block.order = index
     })
+
+    checkIfDim(state.blocks)
+    return blocks.length
+}
+
+function _stashBlocks(state) {
+    const blocks = state.blocks
+        .filter((block) => block.state === BLOCK_STATE.MOVED)
+        .sort((a, b) => a.order - b.order)
+        .filter((block, index) => index < 3)
+
+    blocks.forEach((block, index) => {
+        block.order = index
+        block.state = BLOCK_STATE.INIT
+
+        block.colNum = 4.5 + 16 + index * 8
+        block.rowNum = 80
+
+        console.log(block)
+    })
+
+    state.blocks = [
+        ...state.blocks.filter((block) => !blocks.includes(block)),
+        ...blocks,
+    ]
 
     checkIfDim(state.blocks)
     return blocks.length
@@ -180,13 +316,22 @@ function checkWinOrLose(state) {
 }
 
 function backup(state) {
-    const { record, ...reset } = state
+    const { record, moveSteps, ...reset } = state
     state.record.push(cloneDeep(reset))
 }
 
 function recovery(state) {
-    const { record, ...reset } = state
+    const { record, moveSteps, ...reset } = state
     const { blocks, win, lose, willRemove } = state.record.pop() ?? reset
+    state.blocks = blocks
+    state.win = win
+    state.lose = lose
+    state.willRemove = willRemove
+}
+
+function recoveryInitState(state) {
+    const { record, moveSteps, ...reset } = state
+    const { blocks, win, lose, willRemove } = state.record[0] ?? reset
     state.blocks = blocks
     state.win = win
     state.lose = lose
@@ -197,6 +342,7 @@ export const gameSlice = createSlice({
     name: "game",
     initialState: {
         blocks: [],
+        moveSteps: [],
         win: false,
         lose: false,
         willRemove: false,
@@ -204,7 +350,12 @@ export const gameSlice = createSlice({
     },
     reducers: {
         initGame: (state, action) => {
-            state.blocks = createBlockTypeObj(action.payload)
+            const [blocks, moveSteps] = createSolvableBlockTypeObj(
+                action.payload
+            )
+            state.blocks = blocks
+            state.moveSteps = moveSteps
+
             state.movedOrder = 0
             state.win = 0
             state.lose = 0
@@ -214,13 +365,22 @@ export const gameSlice = createSlice({
             if (state.willRemove) return
             backup(state)
 
-            const { id } = action.payload
+            const id = action.payload
             const block = state.blocks.find((b) => b.id === id)
+
+            if (block.state !== BLOCK_STATE.INIT || block.overlap === true)
+                throw new Error("Invalid Move")
             block.state = BLOCK_STATE.MOVED
             block.order = 100
             updateData(state)
 
             if (checkIfNeedRemove(state) === false) checkWinOrLose(state)
+        },
+        stashBlocks: (state) => {
+            // if (state.willRemove) return
+            // backup(state)
+            // _stashBlocks(state)
+            // updateData(state)
         },
         shuffleBlock: (state) => {
             backup(state)
@@ -239,6 +399,10 @@ export const gameSlice = createSlice({
             recovery(state)
             checkWinOrLose(state)
         },
+        restoreBlocks: (state) => {
+            recoveryInitState(state)
+            checkWinOrLose(state)
+        },
         removeBlocks: (state) => {
             _removeBlocks(state)
             checkWinOrLose(state)
@@ -249,6 +413,8 @@ export const gameSlice = createSlice({
 export const {
     initGame,
     moveOutBlock,
+    stashBlocks,
+    restoreBlocks,
     cancelMove,
     removeBlocks,
     shuffleBlock,

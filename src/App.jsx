@@ -11,6 +11,7 @@ import {
     moveOutBlock,
     shuffleBlock,
     removeBlocks,
+    restoreBlocks,
 } from "./store/gameSlice"
 
 import screenfull from "screenfull"
@@ -35,8 +36,9 @@ import music from "./assets/18367545a1e_063.mp3?url"
 import { mdiVolumeMute, mdiVolumeHigh } from "@mdi/js"
 
 function vibrate() {
-    console.log("window.navigator?.vibrate", window.navigator?.vibrate)
-    window.navigator?.vibrate(1000)
+    try {
+        window.navigator?.vibrate(1000)
+    } catch (error) {}
 }
 
 function Block({
@@ -274,6 +276,7 @@ function useGame(data) {
     const win = useSelector((state) => state.game.win)
     const lose = useSelector((state) => state.game.lose)
     const willRemove = useSelector((state) => state.game.willRemove)
+    const moveSteps = useSelector((state) => state.game.moveSteps)
 
     const dispatch = useDispatch()
     useLayoutEffect(() => {
@@ -317,19 +320,29 @@ function useGame(data) {
             dispatch(cancelMove())
         },
         moveOutBlock(block) {
-            dispatch(moveOutBlock(block))
+            dispatch(moveOutBlock(block.id))
+        },
+        async autoMove() {
+            const steps = moveSteps
+            dispatch(restoreBlocks())
+            for (const id of steps) {
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 1000)
+                })
+                dispatch(moveOutBlock(id))
+            }
         },
     }
 }
 
 function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
     const moveOutAreaCol = 4.5
-    const moveOutAreaRow = 80
+    const moveOutAreaRow = 90
 
     const Blocks = blocks.map((block) => {
         const { type, id } = block
 
-        const { rolNum: colNum, rowNum, overlap } = block
+        const { colNum, rowNum, overlap } = block
 
         if (block.state === BLOCK_STATE.REMOVED) {
             return (
@@ -374,7 +387,8 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
                     rowNum={rowNum}
                     overlap={overlap}
                     style={{
-                        transition: "filter 0.3s, transform 0.4s",
+                        transition:
+                            "filter 0.3s, left 0.4s, top 0.4s, transform 0.4s",
                     }}
                 />
             )
@@ -466,9 +480,10 @@ function AudioPlayer({ style, ...props }) {
 function MainScreen() {
     const size = useWindowSize()
     const width = 15 * 65
-    const height = 15 * 115 + 120
+    const height = 15 * 125 + 120
     const scale = getScale(size, width, height)
-    const { blocks, shuffleBlock, cancelMove, moveOutBlock } = useGame(data)
+    const { blocks, shuffleBlock, cancelMove, moveOutBlock, autoMove } =
+        useGame(data)
 
     return (
         <div
@@ -505,11 +520,13 @@ function MainScreen() {
 
             <ChessBoard
                 width={15 * 65}
-                height={15 * 115}
+                height={15 * 125}
                 blocks={blocks}
                 onClickBlock={moveOutBlock}
                 onUseSkill={(index) => {
-                    if (index == 1) {
+                    if (index == 0) {
+                        autoMove()
+                    } else if (index == 1) {
                         cancelMove()
                     } else if (index == 2) {
                         shuffleBlock()
