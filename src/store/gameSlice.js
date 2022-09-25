@@ -1,7 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit"
-import cloneDeep from "lodash/cloneDeep"
-import countBy from "lodash/countBy"
-import random from "random"
 
 function shuffle(t) {
     for (let e = t.length - 1; e >= 0; e--) {
@@ -11,6 +8,12 @@ function shuffle(t) {
         t[e] = n
     }
     return t
+}
+
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
 }
 
 export const BLOCK_STATE = {
@@ -120,7 +123,7 @@ function getRandomBottomBlock(blockMap, map) {
     }
 
     const bottomNodes = getBottomNodes(map)
-    const node = bottomNodes[random.int(0, bottomNodes.length - 1)]
+    const node = bottomNodes[getRandomInt(0, bottomNodes.length - 1)]
     removeBottomNodeFromMap(map, node)
     return blockMap[node.id]
 }
@@ -158,14 +161,16 @@ function createRandomBlockTypeObj(data) {
 }
 
 function createSolvableBlockTypeObj(blockTypeData, blocks) {
-    const blockTypeCount = cloneDeep(blockTypeData)
+    const blockTypeCount = { ...blockTypeData }
 
     Object.entries(
-        countBy(
-            blocks
-                .filter((block) => block.type !== 0)
-                .map((block) => block.type)
-        )
+        blocks
+            .filter((block) => block.type !== 0)
+            .map((block) => block.type)
+            .reduce((sum, type) => {
+                if (type in sum) sum[type] += 1
+                else sum[type] = 1
+            }, {})
     ).forEach(([type, count]) => {
         if (type in blockTypeCount) blockTypeCount[type] += count / 3
         else blockTypeCount[type] = count / 3
@@ -182,11 +187,13 @@ function createSolvableBlockTypeObj(blockTypeData, blocks) {
     const map = getOvelapMap(blocks)
     const blockMap = getBlockMap(blocks)
     while (blockTypeArr.length !== 0 || movedBlockType.length !== 0) {
-        const isRecoveryFromRemoved = true //random.boolean() || true
+        const isRecoveryFromRemoved = true // getRandomInt(0,1) === 1
         const mustRecoveryFromMoved =
             movedBlockType.length > 4 ||
             blockTypeArr.length === 0 ||
-            movedBlockType.some((type) => type === blockTypeArr.at(-1))
+            movedBlockType.some(
+                (type) => type === blockTypeArr[blockTypeArr.length - 1]
+            )
         const mustRecoveryFromRemoved = movedBlockType.length === 0
 
         const canRecoveryFromRemoved =
@@ -203,7 +210,7 @@ function createSolvableBlockTypeObj(blockTypeData, blocks) {
             movedBlockType.push(type, type)
             block.type = type
         } else {
-            const index = random.int(0, movedBlockType.length - 1)
+            const index = getRandomInt(0, movedBlockType.length - 1)
             const type = movedBlockType[index]
             movedBlockType.splice(index, 1)
             block.type = type
@@ -220,10 +227,13 @@ function updateData(state) {
         .filter((block) => block.state === BLOCK_STATE.MOVED)
         .sort((a, b) => a.order - b.order)
         .reduce((list, block) => {
-            const index = list.findLastIndex((b) => b.type === block.type)
+            const entry = list
+                .map((item, index) => [item, index])
+                .reverse()
+                .find(([item, index]) => item.type === block.type)
 
-            if (index !== -1) {
-                list.splice(index + 1, 0, block)
+            if (entry) {
+                list.splice(entry[1] + 1, 0, block)
             } else {
                 list.push(block)
             }
@@ -316,7 +326,9 @@ function checkWinOrLose(state) {
 
 function backup(state) {
     const { record, moveSteps, ...reset } = state
-    state.record.push(cloneDeep(reset))
+    // state.record.push(cloneDeep(reset))
+    const data = JSON.parse(JSON.stringify(reset))
+    state.record.push(data)
 }
 
 function recovery(state) {
@@ -327,11 +339,8 @@ function recovery(state) {
 
 function recoveryInitState(state) {
     const { record, moveSteps, ...reset } = state
-    const { blocks, win, lose, willRemove } = state.record[0] ?? reset
-    state.blocks = blocks
-    state.win = win
-    state.lose = lose
-    state.willRemove = willRemove
+    const data = state.record[0] ?? reset
+    for (const [k, v] of Object.entries(data)) state[k] = v
 }
 
 export const gameSlice = createSlice({
@@ -348,8 +357,7 @@ export const gameSlice = createSlice({
     reducers: {
         initGame: (state, action) => {
             console.time("initGame")
-
-            const { blockTypeData, levelData } = cloneDeep(action.payload)
+            const { blockTypeData, levelData } = action.payload
             const blocks = Object.values(levelData)
                 .flatMap((i) => i)
                 .map((i) => ({
@@ -393,7 +401,7 @@ export const gameSlice = createSlice({
 
             console.timeEnd("moveOutBlock")
         },
-        stashBlocks: (state) => {},
+        stashBlocks: (state) => { },
         shuffleBlock: (state) => {
             backup(state)
             const blocks = state.blocks.filter(
@@ -413,6 +421,7 @@ export const gameSlice = createSlice({
         },
         restoreBlocks: (state) => {
             recoveryInitState(state)
+            checkIfDim(state)
             checkWinOrLose(state)
         },
         removeBlocks: (state) => {

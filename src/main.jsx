@@ -1,6 +1,3 @@
-import "core-js/es/array/find-last-index"
-import "core-js/es/array/at"
-
 import React from "react"
 import ReactDOM from "react-dom/client"
 import NiceModal from "@ebay/nice-modal-react"

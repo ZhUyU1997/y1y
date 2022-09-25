@@ -326,9 +326,7 @@ function useGame(data) {
             const steps = moveSteps
             dispatch(restoreBlocks())
             for (const id of steps) {
-                await new Promise((resolve) => {
-                    setTimeout(resolve, 1000)
-                })
+                await new Promise((resolve) => setTimeout(resolve, 1000))
                 dispatch(moveOutBlock(id))
             }
         },
