@@ -7,7 +7,7 @@ import dayjs from "dayjs"
 export default defineConfig({
   base: '/y1y/',
   define: {
-    __APP_VERSION__: JSON.stringify("v0.0.6"),
+    __APP_VERSION__: JSON.stringify("v0.0.7"),
     __APP_BUILD_TIME: Date.now()
   },
   plugins: [react(), VitePWA({
