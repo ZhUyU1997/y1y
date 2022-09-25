@@ -63,8 +63,10 @@ function Block({
                 left: colNum * 15,
                 top: rowNum * 15,
                 borderRadius: 10,
-                backgroundImage: `url(${block_bg})`,
-                // border:"1px solid red",
+                backgroundColor: "#F5FFCD",
+                border: "3px solid #253508",
+                boxShadow: "inset 0 -12px 0 #72A313, inset 0 -15px 0 #C8D78C",
+                // backgroundImage: `url(${block_bg})`,
                 backgroundRepeat: "no-repeat",
 
                 display: "flex",
