@@ -19,7 +19,21 @@ export const BLOCK_STATE = {
     REMOVED: 4,
 }
 
-function blockOverlap(a, b) {
+function blockOverlap(blockA, blockB) {
+    const a = {
+        x: blockA.colNum,
+        y: blockA.rowNum,
+        w: 8,
+        h: 8,
+    }
+
+    const b = {
+        x: blockB.colNum,
+        y: blockB.rowNum,
+        w: 8,
+        h: 8,
+    }
+
     const r = {
         x: 0,
         y: 0,
@@ -44,83 +58,81 @@ function blockOverlap(a, b) {
     return false
 }
 
-function checkIfDim(blocks) {
-    const checkedBlocks = []
-    blocks
-        .filter(
-            (block) =>
-                block.state !== BLOCK_STATE.MOVED &&
-                block.state !== BLOCK_STATE.REMOVED
-        )
-        .forEach((block) => {
-            block.overlap = false
-
-            for (const lowerBlock of checkedBlocks) {
-                if (lowerBlock.overlap) continue
-
-                if (
-                    blockOverlap(
-                        {
-                            x: block.colNum,
-                            y: block.rowNum,
-                            w: 8,
-                            h: 8,
-                        },
-                        {
-                            x: lowerBlock.colNum,
-                            y: lowerBlock.rowNum,
-                            w: 8,
-                            h: 8,
-                        }
-                    )
-                ) {
-                    lowerBlock.overlap = true
-                }
-            }
-            checkedBlocks.push(block)
-        })
+function getBlockMap(blocks) {
+    return Object.fromEntries(blocks.map((block) => [block.id, block]))
 }
 
-function getBottomBlocks(blocks) {
-    const checkedBlocks = []
-    const bottomBlocks = []
-    blocks
-        .filter((block) => block.state !== BLOCK_STATE.INIT)
-        .forEach((block) => {
-            block.overlap = false
-            let isBottom = true
-            for (const lowerBlock of checkedBlocks) {
-                if (lowerBlock.overlap) {
-                    isBottom = false
-                    continue
-                }
+function getOvelapMap(blocks) {
+    const overlapMap = {}
+    const blockMap = getBlockMap(blocks)
+    blocks.forEach((block) => {
+        const id = block.id
+        const current = { id, parent: [], children: [] }
+        for (const node of Object.values(overlapMap)) {
+            if (blockOverlap(block, blockMap[node.id]) === false) continue
 
-                if (
-                    blockOverlap(
-                        {
-                            x: block.rolNum,
-                            y: block.rowNum,
-                            w: 8,
-                            h: 8,
-                        },
-                        {
-                            x: lowerBlock.rolNum,
-                            y: lowerBlock.rowNum,
-                            w: 8,
-                            h: 8,
-                        }
-                    )
-                ) {
-                    isBottom = false
-                    lowerBlock.overlap = true
-                }
+            const isParent = node.parent.every(
+                (id) => blockOverlap(block, blockMap[id]) === false
+            )
+            if (isParent) {
+                current.children.push(node.id)
+                node.parent.push(current.id)
             }
-            if (isBottom) bottomBlocks.push(block)
-            checkedBlocks.push(block)
-        })
-    return bottomBlocks
+        }
+        overlapMap[id] = current
+    })
+
+    return overlapMap
 }
 
+function removeBottomNodeFromMap(map, node) {
+    if (node.children.length !== 0)
+        throw new Error("Invalid: node.children.length !== 0")
+    const id = node.id
+    for (const parentId of node.parent) {
+        const parent = map[parentId]
+        parent.children.splice(parent.children.indexOf(id), 1)
+    }
+    delete map[id]
+}
+
+function removeTopNodeFromMap(map, node) {
+    if (node.parent.length !== 0)
+        throw new Error("Invalid: node.parent.length !== 0")
+    const id = node.id
+    for (const childId of node.children) {
+        const child = map[childId]
+        child.parent.splice(child.parent.indexOf(id), 1)
+    }
+    delete map[id]
+}
+
+function removeTopNodeFromMapById(map, id) {
+    const node = map[id]
+    removeTopNodeFromMap(map, node)
+}
+
+function getRandomBottomBlock(blockMap, map) {
+    function getBottomNodes(map) {
+        return Object.values(map).filter((node) => {
+            return node && node.children.length === 0
+        })
+    }
+
+    const bottomNodes = getBottomNodes(map)
+    const node = bottomNodes[random.int(0, bottomNodes.length - 1)]
+    removeBottomNodeFromMap(map, node)
+    return blockMap[node.id]
+}
+
+function checkIfDim(state) {
+    Object.values(state.blocks).forEach((block) => {
+        if (block.id in state.overlapMap)
+            block.overlap = state.overlapMap[block.id].parent.length !== 0
+    })
+}
+
+// legacy
 function createRandomBlockTypeObj(data) {
     const { blockTypeData, levelData } = data
     let blockTypeArr = []
@@ -145,14 +157,12 @@ function createRandomBlockTypeObj(data) {
     return [blocks, []]
 }
 
-function createSolvableBlockTypeObj(data) {
-    const { blockTypeData, levelData } = data
+function createSolvableBlockTypeObj(blockTypeData, blocks) {
     const blockTypeCount = cloneDeep(blockTypeData)
 
     Object.entries(
         countBy(
-            Object.values(levelData)
-                .flatMap((i) => i)
+            blocks
                 .filter((block) => block.type !== 0)
                 .map((block) => block.type)
         )
@@ -167,17 +177,10 @@ function createSolvableBlockTypeObj(data) {
 
     shuffle(blockTypeArr)
 
-    const blocks = Object.values(levelData)
-        .flatMap((i) => i)
-        .map((i) => ({
-            ...i,
-            colNum: i.rolNum,
-            overlap: false,
-            state: BLOCK_STATE.REMOVED,
-        }))
-
     const movedBlockType = []
     const moveSteps = []
+    const map = getOvelapMap(blocks)
+    const blockMap = getBlockMap(blocks)
     while (blockTypeArr.length !== 0 || movedBlockType.length !== 0) {
         const isRecoveryFromRemoved = true //random.boolean() || true
         const mustRecoveryFromMoved =
@@ -190,8 +193,7 @@ function createSolvableBlockTypeObj(data) {
             (!mustRecoveryFromMoved && isRecoveryFromRemoved) ||
             mustRecoveryFromRemoved
 
-        const bottomBlocks = getBottomBlocks(blocks)
-        const block = bottomBlocks[random.int(0, bottomBlocks.length - 1)]
+        const block = getRandomBottomBlock(blockMap, map)
         block.state = BLOCK_STATE.INIT
         moveSteps.push(block.id)
         // console.log(movedBlockType, canRecoveryFromRemoved ? "FromRemoved" : "FromMoved")
@@ -208,10 +210,9 @@ function createSolvableBlockTypeObj(data) {
         }
     }
     if (blockTypeArr.length !== 0) throw new Error("blockTypeArr.length !==0")
-    checkIfDim(blocks)
 
     moveSteps.reverse()
-    return [blocks, moveSteps]
+    return moveSteps
 }
 
 function updateData(state) {
@@ -233,7 +234,6 @@ function updateData(state) {
         block.order = index
     })
 
-    checkIfDim(state.blocks)
     return blocks.length
 }
 
@@ -258,7 +258,6 @@ function _stashBlocks(state) {
         ...blocks,
     ]
 
-    checkIfDim(state.blocks)
     return blocks.length
 }
 
@@ -322,11 +321,8 @@ function backup(state) {
 
 function recovery(state) {
     const { record, moveSteps, ...reset } = state
-    const { blocks, win, lose, willRemove } = state.record.pop() ?? reset
-    state.blocks = blocks
-    state.win = win
-    state.lose = lose
-    state.willRemove = willRemove
+    const data = state.record.pop() ?? reset
+    for (const [k, v] of Object.entries(data)) state[k] = v
 }
 
 function recoveryInitState(state) {
@@ -346,13 +342,24 @@ export const gameSlice = createSlice({
         win: false,
         lose: false,
         willRemove: false,
+        overlapMap: [],
         record: [],
     },
     reducers: {
         initGame: (state, action) => {
-            const [blocks, moveSteps] = createSolvableBlockTypeObj(
-                action.payload
-            )
+            console.time("initGame")
+
+            const { blockTypeData, levelData } = cloneDeep(action.payload)
+            const blocks = Object.values(levelData)
+                .flatMap((i) => i)
+                .map((i) => ({
+                    ...i,
+                    colNum: i.rolNum,
+                    overlap: false,
+                    state: BLOCK_STATE.REMOVED,
+                }))
+            const moveSteps = createSolvableBlockTypeObj(blockTypeData, blocks)
+
             state.blocks = blocks
             state.moveSteps = moveSteps
 
@@ -360,9 +367,14 @@ export const gameSlice = createSlice({
             state.win = 0
             state.lose = 0
             state.record = []
+
+            state.overlapMap = getOvelapMap(state.blocks)
+            checkIfDim(state)
+            console.timeEnd("initGame")
         },
         moveOutBlock: (state, action) => {
             if (state.willRemove) return
+            console.time("moveOutBlock")
             backup(state)
 
             const id = action.payload
@@ -372,16 +384,16 @@ export const gameSlice = createSlice({
                 throw new Error("Invalid Move")
             block.state = BLOCK_STATE.MOVED
             block.order = 100
+
             updateData(state)
+            removeTopNodeFromMapById(state.overlapMap, block.id)
+            checkIfDim(state)
 
             if (checkIfNeedRemove(state) === false) checkWinOrLose(state)
+
+            console.timeEnd("moveOutBlock")
         },
-        stashBlocks: (state) => {
-            // if (state.willRemove) return
-            // backup(state)
-            // _stashBlocks(state)
-            // updateData(state)
-        },
+        stashBlocks: (state) => {},
         shuffleBlock: (state) => {
             backup(state)
             const blocks = state.blocks.filter(
