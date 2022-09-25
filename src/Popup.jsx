@@ -109,8 +109,8 @@ export default NiceModal.create(({ title, button }) => {
     return (
         <div
             style={{
-                width: "100vw",
-                height: "100vh",
+                width: "100%",
+                height: "100%",
                 position: "fixed",
                 left: 0,
                 top: 0,
@@ -161,8 +161,8 @@ export const SettingPopup = NiceModal.create(() => {
     return (
         <div
             style={{
-                width: "100vw",
-                height: "100vh",
+                width: "100%",
+                height: "100%",
                 position: "fixed",
                 left: 0,
                 top: 0,

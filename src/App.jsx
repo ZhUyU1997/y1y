@@ -483,13 +483,15 @@ function MainScreen() {
         useGame(data)
     const [rect, ref] = useMeasure()
     const [scale, setScale] = useState(0)
-    console.log(rect, scale)
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useLayoutEffect(() => {
         setScale(
             getScale(
-                size,
+                {
+                    width: Math.min(size.width, window.innerWidth),
+                    height: Math.min(size.height, window.innerHeight),
+                },
                 rect?.width ?? ref.current.scrollWidth,
                 rect?.height ?? ref.current.scrollHeight
             )
