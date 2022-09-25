@@ -353,7 +353,7 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
                     colNum={moveOutAreaCol + block.order * 8}
                     rowNum={moveOutAreaRow}
                     style={{
-                        transform: "scale(0.1)",
+                        transform: "translate3d(0,0,0) scale(0.1)",
                         transition:
                             "filter 0.3s, left 0.4s, top 0.4s, opacity 0.4s, transform 0.4s",
                         opacity: 0,
@@ -369,7 +369,7 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
                     rowNum={moveOutAreaRow}
                     style={{
                         zIndex: 1,
-
+                        transform: "translate3d(0,0,0)",
                         transition:
                             "filter 0.3s, left 0.4s, top 0.4s, opacity 0.4s, transform 0.4s",
                     }}
@@ -387,6 +387,8 @@ function ChessBoard({ blocks, width, height, onClickBlock, onUseSkill }) {
                     rowNum={rowNum}
                     overlap={overlap}
                     style={{
+                        // https://stackoverflow.com/questions/6481894/proper-way-to-optimize-css-3-animations-for-ios-mobile-safari
+                        transform: "translate3d(0,0,0)",
                         transition:
                             "filter 0.3s, left 0.4s, top 0.4s, transform 0.4s",
                     }}
