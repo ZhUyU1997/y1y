@@ -19,7 +19,7 @@ import isMobile from "ismobilejs"
 
 import "./App.css"
 
-import data from "./level-data/90025.json"
+import data from "./level-data/90026.json"
 import block_bg from "./assets/block_bg.png?url"
 import bg from "./assets/bg.png?url"
 import area_center from "./assets/fence/center.png?url"
